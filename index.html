@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Glyphosate Est. 5 Year span </title>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css">
+  <style>
+    body {
+        padding: 0;
+        margin: 0;
+        background: #00b1ff;
+        font-family: Montserrat, serif;
+      }
+
+      header,
+      footer {
+        background: #245574;
+        color: white;
+        padding: 18px 0;
+        box-shadow: 0px 1px 3px #245574;
+      }
+
+      form {
+        margin: auto;
+        width: 50%;
+      }
+
+      .container {
+        width: 960px;
+        margin: 18px auto;
+      }
+
+
+
+      h1 {
+        width: 960px;
+        margin: 0 auto;
+        font-size: 2em;
+      }
+
+      a {
+        color: white;
+      }
+
+      ul li {
+        margin: 0 0 8px 0;
+      }
+
+      #map {
+        width: 100%;
+        height: 600px;
+      }
+
+
+      .state {
+        fill: none;
+        stroke: red;
+        stroke-width: 2;
+      }
+      .states-names{
+        font-family: Montserrat, serif;
+        font-size: 2em;
+        color: green;
+      }
+
+      .county {
+        stroke: grey;
+        stroke-width: .3;
+      }
+
+      .pest {
+        fill: #cf5635;
+        stroke: white;
+        stroke-width: .3;
+        opacity: .8;
+      }
+      .hover {
+        stroke: #fe955f;
+        stroke-width: 2;
+      }
+
+      .tooltip {
+        position: absolute;
+        min-width: 75px;
+        min-height: 45px;
+        padding: 6px 12px 3px;
+        color: whitesmoke;
+        background: #245574;
+        border-radius: 2px;
+        pointer-events: none;
+        opacity: 1;
+
+      }
+
+      .filter {
+        position: absolute;
+        right: 48px;
+        width: 260px;
+        font-size: 1.3em;
+      }
+      .legend {
+      /* background: #FFFFFF; */
+      position: absolute;
+          left:125px;
+          top:115px;
+      height: 600px;
+      width: 250px;
+        border: 5px;
+        border-radius: 1px;
+        border-color: black;
+        border-width: 1px;
+        font: 12px;
+      }
+      .legend1 {
+      /* background: #FFFFFF; */
+      position: absolute;
+          left:125px;
+          top:115px;
+      height: 600px;
+      width: 250px;
+        border: 5px;
+        border-radius: 1px;
+        border-color: black;
+        border-width: 1px;
+        font: 12px;
+      }
+    </style>
+</head>
+
+<body>
+  <header>
+    <h1>Select Chemicals 5 Year span</h1>
+  </header>
+  <div class="container">
+    <form>
+      <label for="year">Year</label>
+      <input type="range" min=1995 max=2015 step=5 id="year" value=1995 oninput="selected_year.value = year.value">
+      <output name="selected_year" id="selected_year">2000</output>
+    </form>
+    <div id="map"></div>
+    <div id="legend" class="legend"> </div>
+  </div>
+  <footer>
+    <div class="container">
+      <ul>
+        <li>Map authored by Gene Hahn</li>
+        <li>data sourced from <a href="https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html">Cartographic Boundary Files</a></li>
+        <li>data sourced from <a href="https://water.usgs.gov/nawqa/pnsp/usage/maps/county-level/">USGS Pesticide National Synthesis Project</a></li>
+      </ul>
+    </div>
+    <div class="state">
+    </div>
+    <div class="county">
+
+    </div>
+    <div class="tooltip">
+      <div> </div>
+    </div>
+    <div class="tooltip">
+      <div> </div>
+  </footer>
+  <!-- load D3 library -->
+  <script src="https://d3js.org/d3.v5.js"></script>
+
+  <!-- load D3 color  -->
+  <script src="https://d3js.org/d3-color.v1.min.js"></script>
+  <!-- <script src="https://d3js.org/d3-interpolate.v1.min.js"></script> -->
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script> -->
+
+  <!-- load TopoJSON -->
+  <script src="https://unpkg.com/topojson@3"></script>
+
+
+  <script>
+    // define width and height of our SVG
+    var width = 960,
+      height = 600
+
+    // select the map element
+    var svg = d3.select("#map")
+      .append("svg") // append a new SVG element
+      .attr("width", width) // give the SVS element a width attribute and value
+      .attr("height", height) // same for the height
+
+    // set the initial chem and year
+    var currentChemical = "Atrazine",
+      currentYear = 1995;
+
+    // make our counties var global
+    var counties;
+
+    // request the JSON text file, then call drawMap function
+    // synchronous calls to data files
+    var statesJson = d3.json("data/us-states.json"),
+      countyJson = d3.json("data/us-counties.json");
+    // add chemical Data csv
+    var Atrazine = d3.csv("data/atrazine.csv"),
+      Dicamba = d3.csv("data/dicamba.csv"),
+      Fomesafen = d3.csv("data/fomesafen.csv"),
+      Glyphosate = d3.csv("data/glyphosate.csv"),
+      Paraquat = d3.csv("data/paraquat.csv");
+
+    // define color generator
+    // legend min max range color
+    var colorbrewer = {
+      YlOrRd: {
+        9: ["#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#bd0026", "#800026"]
+      }
+    };
+    var colorD = [0, 100000]
+    // Color legend.
+    var color = d3.scaleQuantize()
+      .domain(colorD)
+      .range(colorbrewer.YlOrRd[9]);
+
+    var colorLegend = d3.legendColor()
+      .labelFormat(d3.format(".0f"))
+      .scale(color)
+      .shapePadding(0)
+      .shapeWidth(50)
+      .shapeHeight(45)
+      .labelOffset(12);
+
+    // use promise to call all data files, then send data to callback
+    Promise.all([statesJson, countyJson, Atrazine, Dicamba, Fomesafen, Glyphosate, Paraquat]).then(processData, error)
+
+    // function fired if there is an error
+    function error(error) {
+      console.log(error)
+    }
+
+
+    function processData(data) {
+      var chemicals = ["Atrazine", "Dicamba", "Fomesafen", "Glyphosate", "Paraquat"];
+      // remove first items of data and assign to vars
+      // console.log(data)
+      var statesData = data.shift(),
+        countyData = data.shift();
+      // console.log(countyData)
+      // for each county
+      countyData.objects.counties.geometries.forEach(function(county) {
+        // for each chemical
+        chemicals.forEach(function(chemical, i) {
+          // create a new key for that chemical
+          county.properties[chemical] = {}
+          // for each row in the related dataset
+          data[i].forEach(function(row) {
+            if (county.properties.GEOID == row.geoid) {
+              // create a new key for that chemical
+              county.properties[chemical] = row
+            }
+          })
+        })
+      });
+
+      // now we're storing all our data in the countyData object
+      // and can access chemicals via the name of the chemical as a key
+      // console.log(countyData)
+      // console.log(Object.keys(countyData))
+      // console.log(countyData.objects.counties.geometries[2345])
+      getDcolor(countyData)
+      console.log(colorD + "process dsata")
+      console.log(domainColor)
+      // initally draw the map
+      drawMap(countyData, statesData, chemicals);
+    }
+
+    // draw map
+    function drawMap(countyData, statesData, chemicals) { // START drawMap function
+
+      // convert topo to JSON
+      var geojsonState = topojson.feature(statesData, {
+        type: "GeometryCollection",
+        geometries: statesData.objects.states.geometries
+      })
+
+      // topo to JSON
+      var geojsonCounty = topojson.feature(countyData, {
+        type: "GeometryCollection",
+        geometries: countyData.objects.counties.geometries
+      })
+
+      // define projection and use extent of states
+      var projection = d3.geoAlbersUsa()
+        .fitSize([width, height], geojsonState)
+
+      // define a path generator, which will use
+      // the specified projection
+      var path = d3.geoPath()
+        .projection(projection)
+
+      // create and append a new SVG g element to the SVG
+      counties = svg.append("g")
+        .selectAll("path") // select all the paths (that don't exist yet)
+        .data(geojsonCounty.features) // use the GeoJSON data
+        .enter() // enter the selection
+        .append("path") // append new path elements for each data feature
+        .attr("d", path) // give each path a d attribute value
+        .attr("class", "county") // give each path a class of sate
+        .attr('fill', function(d) {
+          if (d.properties[currentChemical]) {
+
+            return color(+d.properties[currentChemical][currentYear]);
+          }
+        })
+        .on("mouseover", function(d) { // when mousing over an element
+          d3.select(this).classed("hover", true).raise(); // select it, add a class name, and bring to front
+          tooltip.style("opacity", 1).html(d.properties.Atrazine.co_name + ", " + d.properties.Atrazine.st_name +
+            "<br>" + calLbs(chemValue(d.properties[currentChemical]), d.properties.Atrazine.farmLandAc) +
+            "  lbs/Ac of Farmland <br>" + currentChemical + ":  " + Math.round(d.properties[currentChemical][year.value] * 2.20462) +
+            " lbs <br> Yr: " + year.value) // make tooltip visible and update info
+        })
+        // + calLbs(d.properties.currentChemical
+        .on("mouseout", function() { // when mousing out of an element
+          d3.select(this).classed("hover", false) // remove the class
+          tooltip.style("opacity", 0) // hide the element
+        })
+
+      var states = svg.append("g")
+        .selectAll("path") // select all the paths (that don't exist yet)
+        .data(geojsonState.features) // use the GeoJSON data
+        .enter() // enter the selection
+        .append("path") // append new path elements for each data feature
+        .attr("d", path) // give each path a d attribute value
+        .attr("class", "state") // give each path a class of sate
+      // .selectAll("text") // add State abbr
+      // .data(geojsonState.features)
+      // .enter()
+      // .append("svg:text")
+      // .text(function(d) {
+      //
+      //   return d.properties.STUSPS;
+      // })
+      // .attr("cx", function(d) {
+      //   if (path.centroid(d)[0] != NaN) {
+      //     // console.log(path.centroid(d)[0])
+      //     return path.centroid(d)[0];
+      //   }
+      // })
+      // .attr("cy", function(d) {
+      //   if (path.centroid(d)[1] != NaN) {
+      //     return path.centroid(d)[1];
+      //   }
+      // })
+      // .attr("text-anchor", "middle")
+      // .attr('fill', 'white')
+      // .attr("class", "states-names"); // try to add State Abbr to path
+
+      // Create  div for the tooltip and hide with opacity
+      var tooltip = d3.select("#map").append("div")
+        .attr("class", "tooltip")
+
+      // select the map element
+      d3.select("#map")
+        .on("mousemove", function(event) { // when mouse moves over it
+          // update the position of the tooltip
+          tooltip.style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY - 30) + "px");
+        })
+
+      // add UI elements
+      addFilter(chemicals);
+      addSlider();
+      addLegend(color, colorLegend)
+      // addLegend(minimum, maximum, minimumColor, maximumColor, color)
+    }
+
+    function addFilter(chemicals) { // START addFilter function
+      // select the map element
+      var dropdown = d3.select('#map')
+        .append('select') // append a new select element
+        .attr('class', 'filter') // add a class name
+
+      // select all the options (that don't exist yet)
+      dropdown.selectAll('option')
+        .data(chemicals).enter() // attach our array as data
+        .append("option") // append a new option element for each data item
+        .text(function(d) {
+          return d // use the item as text
+        })
+        .attr("value", function(d) {
+          return d // use the time as value attribute
+        })
+
+      dropdown.on('change', function() { // START onChange
+        // get the current value from the select element
+        currentChemical = d3.select('select').property('value');
+        console.log(currentChemical, currentYear)
+
+        // use our already selected counties and update the fill
+        counties
+          .attr('fill', function(d) {
+            if (d.properties[currentChemical]) {
+
+              return color(+d.properties[currentChemical][currentYear]);
+            }
+          })
+      }) // end on change
+    } // end addFilter
+
+    function addSlider() {
+      // slider for year selection
+      d3.select('#year').on('input', function() {
+        currentYear = d3.select('#year').property('value');
+        console.log(currentChemical, currentYear)
+        counties
+          .attr('fill', function(d) {
+            if (d.properties[currentChemical]) {
+              return color(+d.properties[currentChemical][currentYear]);
+            }
+
+          })
+      });
+
+    }
+
+    function addLegend(color, colorLegend) { //START addLegend function
+      svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(0, 50)")
+        .call(colorLegend);
+    } //END addLEgend function
+
+    // calculate lbs per Acre per county
+    function calLbs(lbsAc, farmLand) { // START calLbs function
+      if (farmLand != "0") {
+        var lbs = ((lbsAc * 2.2046226218) / farmLand)
+        // console.log(lbs)
+        return lbs.toFixed(6)
+      } else {
+        return 0
+      }
+    } //END calLbs function
+
+    function chemValue(text) { // START chemValue
+      // console.log(text[year.value])
+      var chemText = text[year.value]
+      return chemText
+    } // END chemValue
+
+    function getDcolor(d) { // START getDcolor
+      // var farmLand = [Number(d.properties.Atrazine.farmLandAc)],
+      //   chemVal = [Number(d.properties[currentChemical][currentYear])],
+      //   lbFarmland = [Number(((chemVal * 2.20462) / farmLand))],
+      //   currentLbs = [];
+      // currentLbs.push(lbFarmland)
+      //
+      //
+      //
+      // var min = Math.min.apply(Math, currentLbs),
+      //   max = Math.max.apply(Math, currentLbs);
+      // console.log(min)
+      // console.log(max)
+      currentData = []
+      d.objects.counties.geometries.forEach(function(data) {
+        if (data.properties[currentChemical][year.value] == undefined) {
+          console.log("undefined")
+        } else {
+          currentData.push(Number(data.properties[currentChemical][year.value]))
+        }
+      })
+
+      min = Math.min.apply(Math, currentData),
+        max = Math.max.apply(Math, currentData);
+      console.log(min)
+      console.log(max)
+      colorD = []
+      colorD.push(min)
+      colorD.push(max)
+      console.log(colorD)
+      domainColor = colorD
+      return domainColor
+    }
+  </script>
+</body>
+
+</html>
