@@ -23,8 +23,8 @@
       <input type="range" min=1995 max=2015 step=5 id="year" value=1995 oninput="selected_year.value = year.value">
       <output name="selected_year" id="selected_year">2000</output>
     </form>
-     <div id="legend" class="legend"> </div>
-    <div id="map"> </div>
+
+    <div id="map">  <div id="legend" class="legend"> </div></div>
 
   </div>
   <footer>
@@ -175,7 +175,6 @@
         .attr("class", "county") // give each path a class of sate
         .attr('fill', function(d) {
           if (d.properties[currentChemical]) {
-
             return color(+d.properties[currentChemical][currentYear]);
           }
         })
@@ -271,10 +270,10 @@
     }
 
     function addLegend(color, colorLegend) { //START addLegend function
-        legend = svg.append("g")
+      legend = svg.append("g")
         .attr("class", "legend")
         .attr("transform", "translate(20, 150)")
-        .call(colorLegend);
+              .call(colorLegend);
     } //END addLegend function
 
     // calculate lbs per Acre per county
