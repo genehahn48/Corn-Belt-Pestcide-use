@@ -1,0 +1,135 @@
+:root {
+  --blue: #007bff;
+  --indigo: #6610f2;
+  --purple: #6f42c1;
+  --pink: #e83e8c;
+  --red: #dc3545;
+  --orange: #fd7e14;
+  --yellow: #ffc107;
+  --green: #28a745;
+  --teal: #20c997;
+  --cyan: #17a2b8;
+  --white: #fff;
+  --gray: #868e96;
+  --gray-dark: #343a40;
+  --primary: #007bff;
+  --secondary: #868e96;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --light: #f8f9fa;
+  --dark: #343a40;
+  --breakpoint-xs: 0;
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-family-monospace: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    background: #00b1ff;
+    font-family: Montserrat, serif;
+  }
+
+  header,
+  footer {
+    background: #245574;
+    color: white;
+    padding: 18px 0;
+    box-shadow: 0px 1px 3px #245574;
+  }
+
+  form {
+    margin: auto;
+    width: 50%;
+  }
+
+  h1 {
+    width: 960px;
+    margin: 0 auto;
+    font-size: 2em;
+  }
+
+  a {
+    color: white;
+  }
+
+  ul li {
+    margin: 0 0 8px 0;
+  }
+
+
+  .state {
+    fill: none;
+    stroke: red;
+    stroke-width: 2;
+  }
+  .states-names{
+    font-family: Montserrat, serif;
+    font-size: 2em;
+    color: green;
+  }
+
+  .county {
+    stroke: grey;
+    stroke-width: .3;
+  }
+
+  .pest {
+    fill: #cf5635;
+    stroke: white;
+    stroke-width: .3;
+    opacity: .8;
+  }
+  .hover {
+    stroke: #fe955f;
+    stroke-width: 2;
+  }
+
+  .tooltip {
+    position: absolute;
+    min-width: 75px;
+    min-height: 45px;
+    padding: 6px 12px 3px;
+    color: whitesmoke;
+    background: #245574;
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 1;
+
+  }
+
+  .filter {
+    position:absolute ;
+    right: 150px;
+    width: 150px;
+    font-size: 1.3em;
+  }
+
+  .legend {
+    border-radius: 1px;
+    border-color: black;
+    border-width: 1px;
+    font: 8px;
+  }
+
+.container {
+  width: 100%;
+  padding-right: 40px;
+  padding-left: 40px;
+  margin-right: auto;
+  margin-left: auto
+}
+
+.col-sm {
+  position: relative;
+  width: 100%;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px
+}
