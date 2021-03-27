@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <title>Glyphosate Est. 5 Year span </title>
-  <meta name="viewport" content="initial-scale=1.0">
   <meta charset="utf-8">
+  <title>Glyphosate Est. 5 Year span </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="/css/styles.css">
@@ -23,8 +23,8 @@
       <input type="range" min=1995 max=2015 step=5 id="year" value=1995 oninput="selected_year.value = year.value">
       <output name="selected_year" id="selected_year">2000</output>
     </form>
-    <!-- <div id="legend" class="legend"> </div> -->
-    <div id="map"></div>
+     <div id="legend" class="legend"> </div>
+    <div id="map"> </div>
 
   </div>
   <footer>
@@ -62,13 +62,13 @@
 
   <script>
     // define width and height of our SVG
-    var width = 900,
-      height = 600
+    var width = screen.width*.7,
+        height = screen.height*.7
 
     // select the map element
     var svg = d3.select("#map")
       .append("svg") // append a new SVG element
-      .attr("width", width) // give the SVS element a width attribute and value
+      .attr("width", width) // give the SVG element a width attribute and value
       .attr("height", height) // same for the height
 
     // set the initial chem and year
@@ -91,24 +91,13 @@
 
     // define color generator
     // legend min max range color
+    //Define color for map and legend
     var colorbrewer = {
       YlOrRd: {
         9: ["#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#bd0026", "#800026"]
       }
     };
-    var colorD = [0, 100000]
-    // Color legend.
-    var color = d3.scaleQuantize()
-      .domain(colorD)
-      .range(colorbrewer.YlOrRd[9]);
 
-    var colorLegend = d3.legendColor()
-      .labelFormat(d3.format(".0f"))
-      .scale(color)
-      .shapePadding(0)
-      .shapeWidth(50)
-      .shapeHeight(45)
-      .labelOffset(12);
 
     // use promise to call all data files, then send data to callback
     Promise.all([statesJson, countyJson, Atrazine, Dicamba, Fomesafen, Glyphosate, Paraquat]).then(processData, error)
@@ -143,13 +132,12 @@
       });
 
       // now we're storing all our data in the countyData object
-      // and can access chemicals via the name of the chemical as a key
-      // console.log(countyData)
-      // console.log(Object.keys(countyData))
-      // console.log(countyData.objects.counties.geometries[2345])
-      getDcolor(countyData)
-      console.log(colorD + "process dsata")
-      console.log(domainColor)
+      // and can access chemicals via the name of the chemical as a key in countyData
+
+// Get color for legend and min max to start with drawing legend
+      getDcolor(countyData,currentChemical,currentYear)
+        console.log(countyData)
+
       // initally draw the map
       drawMap(countyData, statesData, chemicals);
     }
@@ -172,7 +160,7 @@
       // define projection and use extent of states
       var projection = d3.geoAlbersUsa()
         .fitSize([width, height], geojsonState)
-            // define a path generator, which will use
+      // define a path generator, which will use
       // the specified projection
       var path = d3.geoPath()
         .projection(projection)
@@ -213,7 +201,8 @@
         .attr("class", "state") // give each path a class of sate
 
       // Create  div for the tooltip and hide with opacity
-      var tooltip = d3.select("#map").append("div")
+      var tooltip = d3.select("#map")
+        .append("div")
         .attr("class", "tooltip")
 
       // select the map element
@@ -221,17 +210,16 @@
         .on("mousemove", function(event) { // when mouse moves over it
           // update the position of the tooltip
           tooltip.style("left", (d3.event.pageX + 10) + "px")
-            .style("top", (d3.event.pageY - 30) + "px");
+            .style("top", (d3.event.pageY - 100) + "px");
         })
 
       // add UI elements
-      addFilter(chemicals);
-      addSlider();
-      addLegend(color, colorLegend)
-      // addLegend(minimum, maximum, minimumColor, maximumColor, color)
+      addFilter(chemicals,countyData); // chemical filter select dropdown
+      addSlider(chemicals,countyData); // year slider
+      addLegend(color, colorLegend) //add legend
     }
 
-    function addFilter(chemicals) { // START addFilter function
+    function addFilter(chemicals,countyData) { // START addFilter function
       // select the map element
       var dropdown = d3.select('#map')
         .append('select') // append a new select element
@@ -251,24 +239,26 @@
       dropdown.on('change', function() { // START onChange
         // get the current value from the select element
         currentChemical = d3.select('select').property('value');
-        console.log(currentChemical, currentYear)
-
+        console.log(currentChemical, currentYear,"dropdown")
+        getDcolor(countyData,currentChemical,currentYear) // get new min max and colorbar for legend
+        addLegend(color,colorLegend) // redraw legend color and ranges
         // use our already selected counties and update the fill
         counties
           .attr('fill', function(d) {
             if (d.properties[currentChemical]) {
-
               return color(+d.properties[currentChemical][currentYear]);
             }
           })
       }) // end on change
     } // end addFilter
 
-    function addSlider() {
+    function addSlider(chemicals,countyData) {
       // slider for year selection
       d3.select('#year').on('input', function() {
         currentYear = d3.select('#year').property('value');
         console.log(currentChemical, currentYear)
+        getDcolor(countyData,currentChemical,currentYear) // get new min max and colorbar for legend
+        addLegend(color,colorLegend) // redraw legend color and ranges
         counties
           .attr('fill', function(d) {
             if (d.properties[currentChemical]) {
@@ -281,12 +271,11 @@
     }
 
     function addLegend(color, colorLegend) { //START addLegend function
-
-      svg.append("g")
+        legend = svg.append("g")
         .attr("class", "legend")
-        .attr("transform", "translate(0, 50)")
+        .attr("transform", "translate(20, 150)")
         .call(colorLegend);
-    } //END addLEgend function
+    } //END addLegend function
 
     // calculate lbs per Acre per county
     function calLbs(lbsAc, farmLand) { // START calLbs function
@@ -305,37 +294,38 @@
       return chemText
     } // END chemValue
 
-    function getDcolor(d) { // START getDcolor
-      // var farmLand = [Number(d.properties.Atrazine.farmLandAc)],
-      //   chemVal = [Number(d.properties[currentChemical][currentYear])],
-      //   lbFarmland = [Number(((chemVal * 2.20462) / farmLand))],
-      //   currentLbs = [];
-      // currentLbs.push(lbFarmland)
-      //
-      //
-      //
-      // var min = Math.min.apply(Math, currentLbs),
-      //   max = Math.max.apply(Math, currentLbs);
-      // console.log(min)
-      // console.log(max)
-      currentData = []
+    function getDcolor(d,chemical,year) { // START getDcolor
+        currentData = []
+        console.log(d,chemical)
       d.objects.counties.geometries.forEach(function(data) {
-        if (data.properties[currentChemical][year.value] == undefined) {
+        if (data.properties[chemical][year] == undefined) {
           console.log("undefined")
         } else {
-          currentData.push(Number(data.properties[currentChemical][year.value]))
+          currentData.push(Number(data.properties[chemical][year]))
         }
       })
 
-      min = Math.min.apply(Math, currentData),
+        min = Math.min.apply(Math, currentData),
         max = Math.max.apply(Math, currentData);
-      console.log(min)
-      console.log(max)
+      console.log(min,"min")
+      console.log(max,"max")
       colorD = []
       colorD.push(min)
       colorD.push(max)
-      console.log(colorD,", ColorDS")
+
       domainColor = colorD
+      // Color legend.
+      window.color = d3.scaleQuantize() // delcare variable global in function
+        .domain(domainColor)
+        .range(colorbrewer.YlOrRd[9]);
+
+      window.colorLegend = d3.legendColor() // declare variable global in function
+        .labelFormat(d3.format(".2s"))
+        .scale(window.color)
+        .shapePadding(0)
+        .shapeWidth(45)
+        .shapeHeight(40)
+        .labelOffset(12);
       return domainColor
     }
   </script>
