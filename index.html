@@ -24,7 +24,10 @@
       <output name="selected_year" id="selected_year">2000</output>
     </form>
 
-    <div id="map">  <div id="legend" class="legend"> </div></div>
+    <div style="display: flex;">
+          <div id="legend"></div>
+          <div id="map"></div>
+     </div>
 
   </div>
   <footer>
@@ -63,13 +66,19 @@
   <script>
     // define width and height of our SVG
     var width = screen.width*.7,
-        height = screen.height*.7
+        height = screen.height*.7,
+        widthForLegend = 175
 
     // select the map element
     var svg = d3.select("#map")
       .append("svg") // append a new SVG element
       .attr("width", width) // give the SVG element a width attribute and value
       .attr("height", height) // same for the height
+// select legend element
+      var svgForLegend = d3.select("#legend")
+            .append("svg")
+            .attr("width", widthForLegend)
+            .attr("height", height);
 
     // set the initial chem and year
     var currentChemical = "Atrazine",
@@ -257,6 +266,7 @@
         currentYear = d3.select('#year').property('value');
         console.log(currentChemical, currentYear)
         getDcolor(countyData,currentChemical,currentYear) // get new min max and colorbar for legend
+
         addLegend(color,colorLegend) // redraw legend color and ranges
         counties
           .attr('fill', function(d) {
@@ -270,10 +280,10 @@
     }
 
     function addLegend(color, colorLegend) { //START addLegend function
-      legend = svg.append("g")
-        .attr("class", "legend")
+      d3.selectAll("#legend > svg > *").remove();
+        var legend = svgForLegend.append("g")
         .attr("transform", "translate(20, 150)")
-              .call(colorLegend);
+        .call(colorLegend);
     } //END addLegend function
 
     // calculate lbs per Acre per county
